@@ -13,20 +13,28 @@ V0='#ace600'; V1='#d2ff4d'; V2='#ecffb3'
 p1='#FDE725';p2='#9FDA3A';p3='#4AC16D';p4='#1FA187';p5='#277F8E';p6='#365C8D';p7='#46337E';p8='#440154';
 
 ## **NOTE**: following trick to **save file in `eps` format**
-def save_plot(fig,plot_name):
-    py.plot(fig, show_link=False, image='svg',auto_open=True,filename="/Users/lazy/.Trash/temp.html")
+def save_plot(fig, plot_name):
+    py.plot(fig, show_link=False, image='svg', auto_open=True)
 
 # #call the following in a different cell or after sleep
-def move_plot(plot_name):
+def move_plot(plot_name,from_dir,to_dir):
      os.environ['plot_name']=plot_name
-     os.system("mv ~/Downloads/plot_image.svg ${PWD}/img/${plot_name}.svg")
-#     !mv ~/Downloads/plot_image.svg ${PWD}/img/${plot_name}.svg
+     os.environ['from_dir']=from_dir
+     os.environ['to_dir']=to_dir
+     os.system("mv ${from_dir}/plot_image.svg ${to_dir}/${plot_name}.svg")
 
-def convert_plot(plot_name):
+def convert_plot(plot_name,to_dir):
+    # this generates a warning on MacOS
      os.environ['plot_name']=plot_name
-     os.system('/Applications/Inkscape.app/Contents/Resources/script -z -d 300 "${PWD}/img/${plot_name}.svg" --export-png="${PWD}/img/${plot_name}.png"')
-#     %env plot_name=$plot_name
-#     !/Applications/Inkscape.app/Contents/Resources/script -z -d 300 "${PWD}/img/${plot_name}.svg" --export-png="${PWD}/img/${plot_name}.png"
+     os.environ['to_dir']=to_dir
+     # os.system('/Applications/Inkscape.app/Contents/Resources/script -z -d 300 "${to_dir}/${plot_name}.svg" --export-png="${PWD}/img/${plot_name}.png"')  # for png
+     os.system('inkscape "${to_dir}/${plot_name}.svg" -E "${to_dir}/${plot_name}.eps" --export-ignore-filters --export-ps-level=3')  # for png
+
+def move_convert_plot(plot_name,from_dir,to_dir):
+    move_plot(plot_name,from_dir,to_dir)
+    convert_plot(plot_name,to_dir)
+    os.system('rm ${from_dir}/Unknown*.txt')
+    os.system('rm ${to_dir}/${plot_name}.svg')
 
 def arrange_data(plot_input):
     arranged_data={}
@@ -97,30 +105,66 @@ def get_data(plot_input):
     return data
 
 def get_layout(layout_input):
+    if layout_input['margin']=='default':
+        layout_input['margin']=[80,80,80,80,0]
+    if layout_input['xtickvals']=='default':
+        mytickvals=[i+1 for i in range(len(layout_input['xlabel'])+1)]
+    else:
+        mytickvals=layout_input['xtickvals']
+
     myxaxis = go.XAxis(
         title=layout_input['xtitle'],
         titlefont=dict(
                     size=16,
-                    color='rgb(107, 107, 107)'
                 ),
         showticklabels=True,
         ticktext=layout_input['xlabel'],
-        tickvals=[i+1 for i in range(len(layout_input['xlabel'])+1)]
+        # tickvals=tickvals,
+        tickvals=mytickvals,
+        showline=True,
+        mirror="ticks",
+        ticks="inside",
+        tickfont=dict(
+            size=16,
+            ),
+        linewidth=2,
+        tickwidth=2,
     )
     myyaxis = go.YAxis(
         title=layout_input['ytitle'],
         titlefont=dict(
                     size=16,
-                    color='rgb(107, 107, 107)'
                 ),
+        showline=True,
+        tickprefix="  ",
+        mirror="ticks",
+        ticks="inside",
+        tickfont=dict(
+            size=16,
+            ),
+        linewidth=2,
+        tickwidth=2,
 
     )
     layout = go.Layout(
         title=layout_input['title'],
+        margin=dict(
+            t=layout_input['margin'][0],
+            r=layout_input['margin'][1],
+            b=layout_input['margin'][2],
+            l=layout_input['margin'][3],
+            pad=layout_input['margin'][4],
+            ),
         barmode='stack',
         xaxis=myxaxis,
         yaxis=myyaxis,
-        shapes=layout_input['shapes']
+        shapes=layout_input['shapes'],
+        legend=dict(
+            x=layout_input['legend'][0], 
+            y=layout_input['legend'][1],
+            bordercolor = Z2,
+            borderwidth = 2,
+            )
 
     )
     return layout
